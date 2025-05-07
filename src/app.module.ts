@@ -12,6 +12,7 @@ import { SecurityMiddleware } from './common/middleware/secutiry.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { AuthorizationModule } from './modules/authorization/authorization.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { LoggerModule } from './common/logger/logger.module';
     AuthModule,
     HealthModule,
     LoggerModule,
+    AuthorizationModule,
   ],
 })
 export class AppModule implements NestModule {
