@@ -19,9 +19,10 @@ interface CacheWithRedisStore extends CacheManagerCacheInterface {
 
 @Injectable()
 export class RedisHealthIndicator {
+  private readonly defaultMaxMemoryRSS: number = 250 * 1024 * 1024; // 250 MB
+
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: CacheWithRedisStore,
-    private readonly defaultMaxMemoryRSS: number = 250 * 1024 * 1024, // 250 MB
   ) {}
 
   async check(

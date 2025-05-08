@@ -119,8 +119,13 @@ api/
     # JWT Secrets (se estiver usando o módulo de autenticação)
     # JWT_SECRET=yourSecretKeyForAccessToken
     # JWT_REFRESH_SECRET=yourSecretKeyForRefreshToken
-    # JWT_ACCESS_TOKEN_EXPIRATION_TIME=3600 # 1 hora
-    # JWT_REFRESH_TOKEN_EXPIRATION_TIME=86400 # 1 dia
+    # JWT_ACCESS_TOKEN_EXPIRATION_TIME=3600 # 1 hora (ex: 15m para 15 minutos)
+    # JWT_REFRESH_TOKEN_EXPIRATION_TIME=86400 # 1 dia (ex: 7d para 7 dias)
+
+    # Configurações de Rate Limiting para Falhas de Login (Opcional, padrões existem)
+    # FAILED_LOGIN_MAX_ATTEMPTS=5
+    # FAILED_LOGIN_WINDOW_SECONDS=300
+    # FAILED_LOGIN_BLOCK_SECONDS=900
     ```
 
 4.  Inicie os serviços com Docker (PostgreSQL, Redis):
@@ -448,11 +453,25 @@ Para cenários como "um usuário só pode editar seus próprios artigos" ou "um 
 - **Compressão de Resposta**: Usando `@fastify/compress` para reduzir o tamanho das respostas.
 - **CORS (Cross-Origin Resource Sharing)**: Configuração granular de quais origens podem acessar a API.
 - **CSRF Protection**: Usando `@fastify/csrf-protection` para proteger contra ataques Cross-Site Request Forgery em rotas que manipulam estado (POST, PUT, DELETE).
-- **Rate Limiting (Throttling)**: Usando `@nestjs/throttler` para proteger contra ataques de força bruta e abuso de API.
+- **Rate Limiting (Throttling)**:
+  - Uso de `@nestjs/throttler` para proteção geral contra abuso de API, configurável via variáveis de ambiente (`THROTTLE_TTL`, `THROTTLE_LIMIT`).
+  - **Bloqueio de IP por Falhas de Login**: Mecanismo adicional que rastreia tentativas de login falhas por IP. Após um número configurável de falhas (`FAILED_LOGIN_MAX_ATTEMPTS`) dentro de uma janela de tempo (`FAILED_LOGIN_WINDOW_SECONDS`), o IP é bloqueado por um período (`FAILED_LOGIN_BLOCK_SECONDS`). Esta lógica utiliza Redis para persistência.
+    - É crucial garantir que o `trustProxy` esteja configurado corretamente no adaptador HTTP (Fastify) em `main.ts` se a aplicação estiver atrás de um proxy reverso, para que o IP correto do cliente seja utilizado.
 
 ### Controle de Acesso
 
-- **Autenticação**: (A ser implementada separadamente, ex: com JWT via `@nestjs/passport` e `passport-jwt`). O boilerplate provê a estrutura para fácil integração.
+- **Autenticação (JWT)**:
+  - Implementada com `@nestjs/passport`, `passport-jwt` e `@nestjs/jwt`.
+  - **Refresh Tokens**:
+    - Tokens de acesso (`access_token`) possuem curta duração (configurável, ex: 15 minutos) para segurança aprimorada.
+    - Refresh tokens (`refresh_token`) de longa duração (configurável, ex: 7 dias) são emitidos para permitir que os usuários obtenham novos tokens de acesso sem reinserir credenciais.
+    - Hashes dos refresh tokens são armazenados de forma segura no Redis com TTL correspondente à sua validade.
+    - Endpoint `POST /auth/refresh` para renovação de tokens.
+  - **Revogação de Tokens de Acesso (Blocklist)**:
+    - Access tokens contêm um `jti` (JWT ID) único.
+    - Endpoint `POST /auth/logout` permite que o usuário invalide seu token de acesso atual. O `jti` do token é adicionado a uma blocklist no Redis com um TTL igual ao tempo de vida restante do token.
+    - A `JwtStrategy` verifica esta blocklist a cada requisição, rejeitando tokens revogados mesmo que ainda não tenham expirado naturalmente.
+  - **Validação de Usuário Robusta**: A `JwtStrategy` não apenas valida a assinatura e expiração do token, mas também verifica (via `AuthService`) se o usuário associado ao token (pelo `sub` claim) ainda existe e é considerado válido no banco de dados (ex: não excluído, `isActive` se aplicável) a cada requisição.
 - **Autorização Baseada em Papéis (RBAC) com CASL**:
   - Permissões granulares definidas por papéis.
   - Verificação de habilidades (`can`/`cannot`) em ações (`read`, `create`, `manage`) e sujeitos (entidades como `User`, `Article`, ou `'all'`).
@@ -501,10 +520,12 @@ Este boilerplate foca na autorização, mas a autenticação é um pré-requisit
 
 1.  Crie (ou use) um `AuthModule`.
 2.  Instale `@nestjs/passport`, `passport`, `@nestjs/jwt`, `passport-jwt` e os tipos `@types/passport-jwt`.
-3.  Configure o `JwtModule` com seus segredos e tempo de expiração.
-4.  Crie uma `JwtStrategy` que valide o token e retorne o payload do usuário.
-5.  Implemente rotas de login no `AuthController` que gerem os tokens JWT.
-6.  Use um `JwtAuthGuard` (que você criará) para proteger rotas que requerem autenticação. Lembre-se de aplicá-lo _antes_ do `PoliciesGuard`.
+3.  Configure o `JwtModule` com seus segredos (`JWT_SECRET`, `JWT_REFRESH_SECRET`) e tempos de expiração (`JWT_ACCESS_TOKEN_EXPIRATION_TIME`, `JWT_REFRESH_TOKEN_EXPIRATION_TIME`) através de variáveis de ambiente.
+4.  Crie uma `JwtStrategy` que valide o token (assinatura, expiração, blocklist de JTI, validade do usuário no DB) e retorne o payload do usuário.
+5.  Implemente rotas de login no `AuthController` que gerem os `access_token` e `refresh_token`.
+6.  Implemente uma rota `/auth/refresh` para troca de `refresh_token` por um novo par de tokens.
+7.  Implemente uma rota `/auth/logout` para adicionar o `access_token` à blocklist.
+8.  Use um `JwtAuthGuard` (que você criará ou usará o padrão do passport) para proteger rotas que requerem autenticação. Lembre-se de aplicá-lo _antes_ do `PoliciesGuard` se ambos forem usados.
 
 ### Adicionar Novas Configurações Customizadas
 

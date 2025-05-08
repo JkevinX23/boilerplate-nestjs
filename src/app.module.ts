@@ -7,6 +7,7 @@ import { redisStore } from 'cache-manager-redis-store';
 import databaseConfig from './config/database.config';
 import securityConfig from './config/security.config';
 import cacheConfig from './config/cache.config';
+import throttleConfig from './config/throttle.config';
 import { UserModule } from './modules/user/user.module';
 import { SecurityMiddleware } from './common/middleware/secutiry.middleware';
 import { AuthModule } from './modules/auth/auth.module';
@@ -18,7 +19,7 @@ import { AuthorizationModule } from './modules/authorization/authorization.modul
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, securityConfig, cacheConfig],
+      load: [databaseConfig, securityConfig, cacheConfig, throttleConfig],
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
 
