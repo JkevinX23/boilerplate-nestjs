@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Bem-vindo ao Boilerplate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        .container {
+            background-color: #ffffff;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .content {
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bem-vindo ao Boilerplate!</h1>
+        </div>
+        <div class="content">
+            <p>Olá, <strong>{{name}}</strong>!</p>
+            <p>Estamos muito felizes em ter você como parte da nossa comunidade.</p>
+            <p>Com o Boilerplate, você terá acesso a diversos benefícios e funcionalidades.</p>
+            <p>Se você tiver alguma dúvida, não hesite em entrar em contato com nossa equipe de suporte.</p>
+            <a href="{{confirmationUrl}}" class="button">Confirmar meu cadastro</a>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} Boilerplate - Todos os direitos reservados</p>
+            <p>Você recebeu este email porque cadastrou-se no nosso sistema. Se você não solicitou este cadastro, por favor ignore esta mensagem.</p>
+        </div>
+    </div>
+</body>
+</html>

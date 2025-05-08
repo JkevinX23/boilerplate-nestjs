@@ -22,6 +22,7 @@ Este é um boilerplate para aplicações NestJS com foco em segurança e boas pr
   - Sanitização de dados (implícita via ORM e validação)
   - Headers de segurança adicionais
 - **Autorização**: CASL (@casl/ability) para controle de acesso baseado em papéis e permissões granulares.
+- **Email**: Sistema de envio de emails via SMTP utilizando Nodemailer e templates Handlebars.
 
 ## Estrutura do Projeto
 
@@ -42,13 +43,19 @@ api/
 │   ├── config/
 │   │   ├── cache.config.ts
 │   │   ├── database.config.ts
-│   │   └── security.config.ts
+│   │   ├── security.config.ts
+│   │   └── email.config.ts
 │   ├── modules/
 │   │   ├── user/
 │   │   │   ├── user.entity.ts
 │   │   │   └── ...
 │   │   ├── auth/             # Módulo de Autenticação (JWT)
-│   │   └── authorization/    # Módulo de Autorização com CASL
+│   │   ├── authorization/    # Módulo de Autorização com CASL
+│   │   └── email/            # Módulo de envio de emails via SMTP
+│   │       ├── templates/    # Templates HTML para emails
+│   │       ├── interfaces/   # Interfaces para tipagem
+│   │       ├── email.service.ts
+│   │       └── email.module.ts
 │   │       ├── casl/
 │   │       │   └── casl-ability.factory.ts
 │   │       ├── decorators/
@@ -126,6 +133,14 @@ api/
     # FAILED_LOGIN_MAX_ATTEMPTS=5
     # FAILED_LOGIN_WINDOW_SECONDS=300
     # FAILED_LOGIN_BLOCK_SECONDS=900
+    
+    # Configurações do Servidor SMTP
+    # EMAIL_HOST=smtp.example.com
+    # EMAIL_PORT=587
+    # EMAIL_SECURE=false
+    # EMAIL_USER=user@example.com
+    # EMAIL_PASSWORD=your_password
+    # EMAIL_FROM="Boilerplate <noreply@boilerplate.com>"
     ```
 
 4.  Inicie os serviços com Docker (PostgreSQL, Redis):
@@ -550,6 +565,101 @@ Este boilerplate foca na autorização, mas a autenticação é um pré-requisit
     }),
     ```
 5.  Injete `ConfigService` e acesse suas configurações: `this.configService.get('payment.apiKey')`.
+
+## Sistema de Envio de Emails (SMTP)
+
+O boilerplate inclui um módulo completo para envio de emails usando SMTP via Nodemailer, com suporte a templates HTML usando Handlebars.
+
+### Recursos Principais
+
+- Configuração centralizada do servidor SMTP via variáveis de ambiente
+- Templates HTML responsivos para emails (welcome, password-reset, etc.)
+- Suporte a emails transacionais e de notificação
+- Interface tipada para opções de envio de email
+- Métodos utilitários para casos de uso comuns
+
+### Como Utilizar
+
+1. **Configuração**:
+
+   Configure as variáveis de ambiente em seu arquivo `.env.development`:
+
+   ```env
+   EMAIL_HOST=smtp.seu-servidor.com
+   EMAIL_PORT=587
+   EMAIL_SECURE=false
+   EMAIL_USER=seu-usuario@email.com
+   EMAIL_PASSWORD=sua-senha
+   EMAIL_FROM="Nome da Aplicação <noreply@sua-aplicacao.com>"
+   ```
+
+2. **Injeção de Dependência**:
+
+   Injete o `EmailService` em qualquer serviço ou controlador onde você precise enviar emails:
+
+   ```typescript
+   import { Injectable } from '@nestjs/common';
+   import { EmailService } from '../email/email.service';
+
+   @Injectable()
+   export class UserService {
+     constructor(private readonly emailService: EmailService) {}
+
+     async createUser(userData) {
+       // Lógica para criar o usuário
+       
+       // Enviar email de boas-vindas
+       await this.emailService.sendWelcomeEmail(
+         userData.email,
+         userData.name,
+         'https://exemplo.com/confirm?token=abc123'
+       );
+     }
+
+     async requestPasswordReset(email: string, user) {
+       // Gerar token
+       const resetToken = '...'; 
+       
+       // Enviar email de redefinição de senha
+       await this.emailService.sendPasswordResetEmail(
+         email,
+         user.name,
+         `https://exemplo.com/reset-password?token=${resetToken}`
+       );
+     }
+   }
+   ```
+
+3. **Personalização de Templates**:
+
+   Os templates HTML estão localizados em `src/modules/email/templates/` e usam a sintaxe Handlebars para renderização dinâmica.
+   
+   - Para adicionar novos templates, crie um arquivo `.hbs` neste diretório.
+   - Para estender as funcionalidades, adicione novos métodos no `EmailService`.
+
+4. **Envios Customizados**:
+
+   Você pode usar o método genérico `sendEmail` para casos mais específicos:
+
+   ```typescript
+   await this.emailService.sendEmail({
+     to: 'destinatario@email.com',
+     subject: 'Assunto do Email',
+     template: 'seu-template', // nome do arquivo sem extensão
+     context: {
+       // Variáveis disponíveis no template
+       name: 'Nome do Destinatário',
+       items: ['item1', 'item2'],
+       totalValue: 99.9
+     },
+     attachments: [
+       {
+         filename: 'invoice.pdf',
+         path: '/caminho/para/arquivo.pdf'
+       }
+     ]
+   });
+   ```
 
 ## Considerações de Produção
 

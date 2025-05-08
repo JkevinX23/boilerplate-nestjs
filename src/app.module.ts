@@ -8,18 +8,20 @@ import databaseConfig from './config/database.config';
 import securityConfig from './config/security.config';
 import cacheConfig from './config/cache.config';
 import throttleConfig from './config/throttle.config';
+import emailConfig from './config/email.config';
 import { UserModule } from './modules/user/user.module';
 import { SecurityMiddleware } from './common/middleware/secutiry.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { AuthorizationModule } from './modules/authorization/authorization.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, securityConfig, cacheConfig, throttleConfig],
+      load: [databaseConfig, securityConfig, cacheConfig, throttleConfig, emailConfig],
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
 
@@ -69,6 +71,7 @@ import { AuthorizationModule } from './modules/authorization/authorization.modul
     HealthModule,
     LoggerModule,
     AuthorizationModule,
+    EmailModule,
   ],
 })
 export class AppModule implements NestModule {
